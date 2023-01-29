@@ -9,7 +9,9 @@ import (
 func CreateDb() (*sql.DB, error) {
 	driverName := "sqlite3"
 	// dsn: dataSourceName，这里是创建了一个基于sqlite3的内存数据库
-	dsn := "file:test.db?cache=shared&mode=memory"
+	dsn := "file:standard.db?cache=shared&mode=memory"
+	// 创建一个普通的sqlite3 数据库
+	//dsn := "file:standard.db"
 	return sql.Open(driverName, dsn)
 }
 
@@ -23,6 +25,15 @@ CREATE TABLE IF NOT EXISTS test_model(
 )
 `
 	res, err := db.ExecContext(ctx, createSql)
+	// 这部分代码可以再封装提炼出去
+	//if err != nil {
+	//	return 0, nil
+	//}
+	//affected, err := res.RowsAffected()
+	//if err != nil {
+	//	return 0, err
+	//}
+	//return affected, nil
 	result := NewResult(res, err)
 	return result.RowsAffected()
 }
@@ -42,6 +53,7 @@ func NewResult(res sql.Result, err error) Result {
 }
 
 func (r *Result) LastInsertId() (int64, error) {
+	// LastInsertId() 和 RowsAffected() 处理逻辑类似，可以进一步提炼封装
 	//if r.err != nil {
 	//	return 0, nil
 	//}
@@ -54,6 +66,7 @@ func (r *Result) LastInsertId() (int64, error) {
 }
 
 func (r *Result) RowsAffected() (int64, error) {
+	// LastInsertId() 和 RowsAffected() 处理逻辑类似，可以进一步提炼封装
 	//if r.err != nil {
 	//	return 0, nil
 	//}
@@ -65,7 +78,7 @@ func (r *Result) RowsAffected() (int64, error) {
 	return r.handleResult(r.res.RowsAffected)
 }
 
-// handleResult 进一步重构，提炼重复代码
+// handleResult 封装了LastInsertId() 和 RowsAffected() 中的重复逻辑
 func (r *Result) handleResult(f func() (int64, error)) (int64, error) {
 	if r.err != nil {
 		return 0, nil
