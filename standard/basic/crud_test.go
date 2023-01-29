@@ -49,17 +49,33 @@ func TestCrud(t *testing.T) {
 	createTableForTest(t, db, ctx)
 
 	testInsertRow(t, db, ctx)
+	testQueryRow(t, db, ctx)
+	testQueryRows(t, db, ctx)
 	testInsertRowTimeout(t, db, ctx)
 }
 
 func testInsertRow(t *testing.T, db *sql.DB, ctx context.Context) {
-	id, err := InsertRow(db, ctx, 1, "Tom", 18, "Jerry")
+	s := "INSERT INTO test_model(`id`, `first_name`, `age`, `last_name`) VALUES(?, ?, ?, ?)"
+	id, err := InsertRow(db, ctx, s, 1, "Tom", 18, "Jerry")
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), id)
 }
 
 func testInsertRowTimeout(t *testing.T, db *sql.DB, ctx context.Context) {
 	time.Sleep(time.Second * 2)
-	_, err := InsertRow(db, ctx, 2, "Tom", 18, "Jerry")
+	s := "INSERT INTO test_model(`id`, `first_name`, `age`, `last_name`) VALUES(?, ?, ?, ?)"
+	_, err := InsertRow(db, ctx, s, 2, "Tom", 18, "Jerry")
 	assert.Equal(t, context.DeadlineExceeded, err)
+}
+
+func testQueryRow(t *testing.T, db *sql.DB, ctx context.Context) {
+	row, err := QueryRow(db, ctx, 1)
+	require.NoError(t, err)
+	t.Log(row, row.LastName.String)
+}
+
+func testQueryRows(t *testing.T, db *sql.DB, ctx context.Context) {
+	rows, err := QueryRows(db, ctx, 1)
+	require.NoError(t, err)
+	t.Log(rows)
 }

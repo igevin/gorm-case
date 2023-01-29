@@ -3,7 +3,6 @@ package basic
 import (
 	"context"
 	"database/sql"
-	"errors"
 	_ "github.com/mattn/go-sqlite3" // 一定不要忘记导入驱动
 )
 
@@ -31,9 +30,8 @@ func CreateTable(db *sql.DB, ctx context.Context, createSql string) (int64, erro
 	return result.RowsAffected()
 }
 
-func InsertRow(db *sql.DB, ctx context.Context, data ...any) (int64, error) {
-	s := "INSERT INTO test_model(`id`, `first_name`, `age`, `last_name`) VALUES(?, ?, ?, ?)"
-	r, err := db.ExecContext(ctx, s, data...)
+func InsertRow(db *sql.DB, ctx context.Context, insertSql string, data ...any) (int64, error) {
+	r, err := db.ExecContext(ctx, insertSql, data...)
 	res := NewResult(r, err)
 	affected, err := res.RowsAffected()
 	if err != nil || affected == 0 {
@@ -42,58 +40,36 @@ func InsertRow(db *sql.DB, ctx context.Context, data ...any) (int64, error) {
 	return res.LastInsertId()
 }
 
-// Result 设计了db.Exec 和db.ExecContext返回结果的抽象
-// 简化了结果返回和错误处理
-type Result struct {
-	err error
-	res sql.Result
+// QueryRow 查询结果与query语句是耦合的，这里没法解耦，只能写死，否则有过度设计之嫌
+func QueryRow(db *sql.DB, ctx context.Context, data ...any) (TestModel, error) {
+	query := "SELECT `id`, `first_name`, `age`, `last_name` FROM `test_model` WHERE `id` = ?"
+	row := db.QueryRowContext(ctx, query, data...)
+	if row.Err() != nil {
+		return TestModel{}, row.Err()
+	}
+	tm := TestModel{}
+	err := row.Scan(&tm.Id, &tm.FirstName, &tm.Age, &tm.LastName)
+	return tm, err
 }
 
-func NewResult(res sql.Result, err error) Result {
-	return Result{
-		err: err,
-		res: res,
-	}
-}
-
-func (r *Result) LastInsertId() (int64, error) {
-	// LastInsertId() 和 RowsAffected() 处理逻辑类似(如下面注释掉的部分)，可以进一步提炼封装
-	//if r.err != nil {
-	//	return 0, r.err
-	//}
-	//affected, err := r.res.LastInsertId()
-	//if err != nil {
-	//	return 0, err
-	//}
-	//return affected, nil
-
-	var f func() (int64, error)
-	if r.res != nil {
-		f = r.res.LastInsertId
-	}
-	return r.handleResult(f)
-}
-
-func (r *Result) RowsAffected() (int64, error) {
-	// LastInsertId() 和 RowsAffected() 处理逻辑类似，可以进一步提炼封装
-	var f func() (int64, error)
-	if r.res != nil {
-		f = r.res.RowsAffected
-	}
-	return r.handleResult(f)
-}
-
-// handleResult 封装了LastInsertId() 和 RowsAffected() 中的重复逻辑
-func (r *Result) handleResult(f func() (int64, error)) (int64, error) {
-	if r.err != nil {
-		return 0, r.err
-	}
-	if f == nil {
-		return 0, errors.New("handler func is nil")
-	}
-	affected, err := f()
+// QueryRows 查询结果与query语句是耦合的，这里没法解耦，只能写死，否则有过度设计之嫌
+func QueryRows(db *sql.DB, ctx context.Context, data ...any) ([]TestModel, error) {
+	query := "SELECT `id`, `first_name`, `age`, `last_name` FROM `test_model` WHERE `id` = ?"
+	rows, err := db.QueryContext(ctx, query, data...)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return affected, nil
+	res := make([]TestModel, 0)
+	for rows.Next() {
+		if rows.Err() != nil {
+			continue
+		}
+		tm := TestModel{}
+		err = rows.Scan(&tm.Id, &tm.FirstName, &tm.Age, &tm.LastName)
+		if err != nil {
+			continue
+		}
+		res = append(res, tm)
+	}
+	return res, err
 }
