@@ -28,7 +28,15 @@ func createDbForTest(t *testing.T) *sql.DB {
 }
 
 func createTableForTest(t *testing.T, db *sql.DB, ctx context.Context) {
-	affected, err := CreateTable(db, ctx)
+	createSql := `
+CREATE TABLE IF NOT EXISTS test_model(
+   id INTEGER PRIMARY KEY,
+   first_name TEXT NOT NULL,
+   age INTEGER,
+   last_name TEXT NOT NULL
+)
+`
+	affected, err := CreateTable(db, ctx, createSql)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), affected)
 }

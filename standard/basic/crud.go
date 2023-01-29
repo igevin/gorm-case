@@ -16,15 +16,7 @@ func CreateDb() (*sql.DB, error) {
 	return sql.Open(driverName, dsn)
 }
 
-func CreateTable(db *sql.DB, ctx context.Context) (int64, error) {
-	createSql := `
-CREATE TABLE IF NOT EXISTS test_model(
-    id INTEGER PRIMARY KEY,
-    first_name TEXT NOT NULL,
-    age INTEGER,
-    last_name TEXT NOT NULL
-)
-`
+func CreateTable(db *sql.DB, ctx context.Context, createSql string) (int64, error) {
 	res, err := db.ExecContext(ctx, createSql)
 	// 这部分代码可以再封装提炼出去
 	//if err != nil {
@@ -42,9 +34,6 @@ CREATE TABLE IF NOT EXISTS test_model(
 func InsertRow(db *sql.DB, ctx context.Context, data ...any) (int64, error) {
 	s := "INSERT INTO test_model(`id`, `first_name`, `age`, `last_name`) VALUES(?, ?, ?, ?)"
 	r, err := db.ExecContext(ctx, s, data...)
-	//if err != nil {
-	//	return 0, err
-	//}
 	res := NewResult(r, err)
 	affected, err := res.RowsAffected()
 	if err != nil || affected == 0 {
