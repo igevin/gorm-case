@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS test_model(
 
 // 每个测试执行一次
 func (s *sqlTestSuite) SetupTest() {
+	// 1
+	//fmt.Println("Setup test: ", s.T().Name())
 	// 测试用例包含"query"或"delete"时，先给数据库新增一条数据
 	name := strings.ToLower(s.T().Name())
 	if !strings.Contains(name, "query") &&
@@ -64,11 +66,23 @@ func (s *sqlTestSuite) SetupTest() {
 	require.Equal(s.T(), int64(1000), id)
 }
 
+func (s *sqlTestSuite) BeforeTest(suiteName, testName string) {
+	// 2
+	//fmt.Println("Before test: ", testName)
+}
+
+func (s *sqlTestSuite) AfterTest(suiteName, testName string) {
+	// 3
+	//fmt.Println("After test: ", testName, suiteName)
+}
+
 // 每个测试执行一次
 func (s *sqlTestSuite) TearDownTest() {
 	query := "DELETE FROM `test_model`"
 	_, err := s.db.Exec(query)
 	require.NoError(s.T(), err)
+	// 4
+	//fmt.Println("TearDownTest: ", s.T().Name())
 }
 
 // 全部测试总计执行一次
