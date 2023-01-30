@@ -73,3 +73,10 @@ func QueryRows(db *sql.DB, ctx context.Context, data ...any) ([]TestModel, error
 	}
 	return res, err
 }
+
+func DeleteRows(db *sql.DB, ctx context.Context, data ...any) (int64, error) {
+	query := "DELETE FROM `test_model` WHERE `id` = ?"
+	res, err := db.ExecContext(ctx, query, data...)
+	result := NewResult(res, err)
+	return result.RowsAffected()
+}

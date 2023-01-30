@@ -51,6 +51,7 @@ func TestCrud(t *testing.T) {
 	testInsertRow(t, db, ctx)
 	testQueryRow(t, db, ctx)
 	testQueryRows(t, db, ctx)
+	testDeleteRows(t, db, ctx)
 	testInsertRowTimeout(t, db, ctx)
 }
 
@@ -78,4 +79,13 @@ func testQueryRows(t *testing.T, db *sql.DB, ctx context.Context) {
 	rows, err := QueryRows(db, ctx, 1)
 	require.NoError(t, err)
 	t.Log(rows)
+}
+
+func testDeleteRows(t *testing.T, db *sql.DB, ctx context.Context) {
+	affected, err := DeleteRows(db, ctx, 1)
+	assert.NoError(t, err)
+	if err != nil {
+		return
+	}
+	assert.Equal(t, int64(1), affected)
 }
