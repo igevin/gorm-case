@@ -1,4 +1,4 @@
-package basic
+package standard
 
 import "database/sql"
 
