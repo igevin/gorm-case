@@ -16,8 +16,8 @@ type createSuite struct {
 }
 
 func TestCreate(t *testing.T) {
-	dsn := "file:test.db?cache=shared&mode=memory"
-	//dsn := "file:create.db"
+	//dsn := "file:test.db?cache=shared&mode=memory"
+	dsn := "file:create.db"
 	suite.Run(t, &createSuite{dsn: dsn})
 }
 
@@ -121,7 +121,43 @@ func (c *createSuite) TestCreatePerBatchV2() {
 }
 
 func (c *createSuite) TestCreateByMap() {
+	var id uint = 1000
+	// 创建单个记录
+	row := map[string]any{
+		"id": id,
+		// key不区分大小写，都会对应到column
+		"name":     "Tom",
+		"Birthday": time.Now(),
+	}
+	res := c.db.Model(&User{}).Create(row)
+	c.Assert().NoError(res.Error)
+	u := &User{Model: gorm.Model{ID: id}}
+	res = c.db.First(u)
+	c.Require().NoError(res.Error)
+	c.Assert().Equal(id, u.ID)
+	c.Assert().Zero(u.Age)
 
+	// 批量创建
+	rows := []User{
+		*newUser(2001),
+		*newUser(2002),
+	}
+	res = c.db.Model(&User{}).Create(rows)
+	c.Require().NoError(res.Error)
+
+	rows2 := []*User{
+		newUser(3001),
+		newUser(3002),
+	}
+	res = c.db.Model(&User{}).Create(rows2)
+	c.Require().NoError(res.Error)
+
+	//rows3 := []*User{
+	//	newUser(4001),
+	//	newUser(4002),
+	//}
+	//res = c.db.Model(&User{}).Create(&rows3)
+	//c.Require().NoError(res.Error)
 }
 
 func (c *createSuite) TestCreateBySqlClause() {
