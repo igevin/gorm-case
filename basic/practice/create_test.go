@@ -82,6 +82,30 @@ func (c *createSuite) TestCreateNegligibly() {
 	c.Assert().Equal("", user.Name)
 }
 
+func (c *createSuite) TestCreateBatch() {
+
+}
+
+func (c *createSuite) TestCreateBatchV2() {
+
+}
+
+func (c *createSuite) TestCreateByMap() {
+
+}
+
+func (c *createSuite) TestCreateBySqlClause() {
+
+}
+
+func (c *createSuite) TestCreateHandlingCustomType() {
+
+}
+
+func (c *createSuite) TestCreateHandlingCustomTypeWithClause() {
+
+}
+
 func newUser(id uint) *User {
 	return &User{
 		Model:    gorm.Model{ID: id},
