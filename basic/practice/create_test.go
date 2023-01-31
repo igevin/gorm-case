@@ -86,6 +86,7 @@ func (c *createSuite) TestCreateBatch() {
 	size := 100
 	users := createUsers(size)
 	// 传入slice，则进行批量创建
+	// 这里传入&users 或 user 都可以
 	res := c.db.Create(&users)
 	c.Assert().NoError(res.Error)
 	for i := 0; i < size; i++ {
@@ -152,12 +153,13 @@ func (c *createSuite) TestCreateByMap() {
 	res = c.db.Model(&User{}).Create(rows2)
 	c.Require().NoError(res.Error)
 
-	//rows3 := []*User{
-	//	newUser(4001),
-	//	newUser(4002),
-	//}
-	//res = c.db.Model(&User{}).Create(&rows3)
-	//c.Require().NoError(res.Error)
+	// 也可以传入 rows3 的指针
+	rows3 := []*User{
+		newUser(4001),
+		newUser(4002),
+	}
+	res = c.db.Model(&User{}).Create(&rows3)
+	c.Require().NoError(res.Error)
 }
 
 func (c *createSuite) TestCreateBySqlClause() {
