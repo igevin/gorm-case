@@ -16,8 +16,8 @@ type createSuite struct {
 }
 
 func TestCreate(t *testing.T) {
-	//dsn := "file:test.db?cache=shared&mode=memory"
-	dsn := "file:create.db"
+	dsn := "file:test.db?cache=shared&mode=memory"
+	//dsn := "file:create.db"
 	suite.Run(t, &createSuite{dsn: dsn})
 }
 
@@ -83,11 +83,41 @@ func (c *createSuite) TestCreateNegligibly() {
 }
 
 func (c *createSuite) TestCreateBatch() {
-
+	size := 100
+	users := createUsers(size)
+	// 传入slice，则进行批量创建
+	res := c.db.Create(&users)
+	c.Assert().NoError(res.Error)
+	for i := 0; i < size; i++ {
+		c.Assert().Equal(uint(i+1), users[i].ID)
+	}
 }
 
-func (c *createSuite) TestCreateBatchV2() {
+func (c *createSuite) TestCreatePerBatch() {
+	size, batchSize := 100, 5
+	users := createUsers(size)
+	// 可以控制每个批次的大小
+	res := c.db.CreateInBatches(&users, batchSize)
+	c.Assert().NoError(res.Error)
+	for i := 0; i < size; i++ {
+		c.Assert().Equal(uint(i+1), users[i].ID)
+	}
+}
 
+func (c *createSuite) TestCreatePerBatchV2() {
+	size, batchSize := 100, 5
+	users := createUsers(size)
+	// 可以在创建db的时候，就配置好每个批次的大小：
+	// db, err := gorm.Open(sqlite.Open("gorm.db"), &gorm.Config{
+	//  CreateBatchSize: 1000,
+	//})
+	// 也可以配置到session 中去：
+	db := c.db.Session(&gorm.Session{CreateBatchSize: batchSize})
+	res := db.Create(&users)
+	c.Assert().NoError(res.Error)
+	for i := 0; i < size; i++ {
+		c.Assert().Equal(uint(i+1), users[i].ID)
+	}
 }
 
 func (c *createSuite) TestCreateByMap() {
@@ -113,4 +143,12 @@ func newUser(id uint) *User {
 		Age:      18,
 		Birthday: time.Now(),
 	}
+}
+
+func createUsers(size int) []User {
+	res := make([]User, 0, size)
+	for i := 0; i < size; i++ {
+		res = append(res, *newUser(0))
+	}
+	return res
 }
