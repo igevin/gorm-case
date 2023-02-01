@@ -42,6 +42,7 @@ func (b *blogSuite) SetupSuite() {
     title       TEXT not null,
     content     TEXT not null,
     author      TEXT not null,
+    tags      	TEXT not null,
     create_time datetime,
     update_time datetime
 )
@@ -56,21 +57,21 @@ func (b *blogSuite) SetupTest() {
 	b.createBlog(ctx, 1000)
 }
 
-func (b *blogSuite) createBlog(ctx context.Context, id int64) {
-	blog := createBlog(id, createWriter(1))
-	s := "INSERT INTO blog (`id`, `title`, `content`, `author`, `create_time`, `update_time`) VALUES(?,?,?,?,?,?)"
-	// 由于 Writer 实现了 Scanner 和 Valuer 接口，blog.Author 可以直接通过 json 序列化为文本字符串
-	res, err := b.db.ExecContext(ctx, s, blog.Id, blog.Title, blog.Content, blog.Author, blog.CreateTime, blog.UpdateTime)
-	result := standard.NewResult(res, err)
-	affected, err := result.RowsAffected()
-	b.Require().NoError(err)
-	b.Assert().Equal(int64(1), affected)
-}
-
 func (b *blogSuite) TearDownTest() {
 	query := "DELETE FROM `blog`"
 	_, err := b.db.Exec(query)
 	b.Require().NoError(err)
+}
+
+func (b *blogSuite) createBlog(ctx context.Context, id int64) {
+	blog := createBlog(id, createWriter(1))
+	s := "INSERT INTO blog (`id`, `title`, `content`, `author`, `tags`, `create_time`, `update_time`) VALUES(?,?,?,?,?,?,?)"
+	// 由于 Writer 实现了 Scanner 和 Valuer 接口，blog.Author 可以直接通过 json 序列化为文本字符串
+	res, err := b.db.ExecContext(ctx, s, blog.Id, blog.Title, blog.Content, blog.Author, blog.Tags, blog.CreateTime, blog.UpdateTime)
+	result := standard.NewResult(res, err)
+	affected, err := result.RowsAffected()
+	b.Require().NoError(err)
+	b.Assert().Equal(int64(1), affected)
 }
 
 func (b *blogSuite) TestCreateBlog() {
@@ -86,17 +87,19 @@ func (b *blogSuite) TestGetBlog() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	s := "SELECT * FROM blog WHERE id=?"
+	s := "SELECT `id`, `title`, `content`, `author`, `tags`, `create_time`, `update_time` FROM blog WHERE id=?"
 	row := b.db.QueryRowContext(ctx, s, id)
 	b.Require().NoError(row.Err())
 
 	blog := Blog{}
 	// 用指针也可以
 	//blog := &Blog{}
-	err := row.Scan(&blog.Id, &blog.Title, &blog.Content, &blog.Author, &blog.CreateTime, &blog.UpdateTime)
+	// Scan的顺序，必须和SQL SELECT顺序一致
+	err := row.Scan(&blog.Id, &blog.Title, &blog.Content, &blog.Author, &blog.Tags, &blog.CreateTime, &blog.UpdateTime)
 	b.Require().NoError(err)
 	b.Assert().Equal(id, blog.Id)
 	b.Assert().Equal("Gevin", blog.Author.Username)
+	b.Assert().Equal(Tag[string]{"micro", "sql", "web"}, *blog.Tags)
 }
 
 func createWriter(id int64) *Writer {
@@ -112,6 +115,7 @@ func createBlog(id int64, w *Writer) Blog {
 		Title:      "Demo",
 		Content:    "This is a demo",
 		Author:     w,
+		Tags:       &Tag[string]{"micro", "sql", "web"},
 		CreateTime: time.Now(),
 		UpdateTime: time.Now(),
 	}
